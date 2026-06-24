@@ -1,0 +1,42 @@
+# Build artifacts
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+build.ninja
+*.ninja
+*.log
+
+# Visual Studio / Windows
+*.sln
+*.vcxproj*
+*.user
+*.suo
+*.opensdf
+*.sdf
+*.ipch
+*.pdb
+*.ilk
+*.idb
+*.cache
+*.obj
+*.o
+*.exe
+*.dll
+*.lib
+*.app
+*.out
+*.dSYM/
+
+# Editor directories
+.vscode/
+.idea/
+
+# Python cache (from original engine)
+__pycache__/
+*.pyc
+
+# Misc
+.DS_Store
+Thumbs.db
