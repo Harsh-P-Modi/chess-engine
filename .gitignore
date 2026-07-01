@@ -40,4 +40,3 @@ __pycache__/
 # Misc
 .DS_Store
 Thumbs.db
-chess_engine.py
