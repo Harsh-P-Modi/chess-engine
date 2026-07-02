@@ -8,6 +8,6 @@ namespace chess {
 int evaluate(const State& state);
 int relative_eval(const State& state);
 
-} // namespace chess
+}
 
 #endif // CHESS_EVALUATION_EVALUATION_HPP

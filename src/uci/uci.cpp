@@ -2,8 +2,10 @@
 #include "core/board.hpp"
 #include "movegen/movegen.hpp"
 #include "search/search.hpp"
+#include "search/tt.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <iterator>
 #include <sstream>
@@ -57,6 +59,30 @@ static std::optional<State> parse_position(const std::vector<std::string>& token
     return state;
 }
 
+static void parse_go(const std::vector<std::string>& tokens, int& depth, int64_t& wtime, int64_t& btime, int64_t& winc, int64_t& binc, int64_t& movetime) {
+    depth = 64;
+    wtime = 0;
+    btime = 0;
+    winc = 0;
+    binc = 0;
+    movetime = 0;
+    for (size_t i = 1; i + 1 < tokens.size(); ++i) {
+        if (tokens[i] == "depth") {
+            depth = std::stoi(tokens[i + 1]);
+        } else if (tokens[i] == "wtime") {
+            wtime = std::stoll(tokens[i + 1]);
+        } else if (tokens[i] == "btime") {
+            btime = std::stoll(tokens[i + 1]);
+        } else if (tokens[i] == "winc") {
+            winc = std::stoll(tokens[i + 1]);
+        } else if (tokens[i] == "binc") {
+            binc = std::stoll(tokens[i + 1]);
+        } else if (tokens[i] == "movetime") {
+            movetime = std::stoll(tokens[i + 1]);
+        }
+    }
+}
+
 int run_uci() {
     std::ofstream log("uci.log");
     State position = initial_state();
@@ -88,18 +114,42 @@ int run_uci() {
                 position = *maybe;
             }
         } else if (command == "go") {
-            log<<"Starting search" << std::endl;
-            int depth = search_depth;
-            for (size_t i = 1; i + 1 < tokens.size(); ++i) {
-                if (tokens[i] == "depth") {
-                    depth = std::stoi(tokens[i + 1]);
+            int depth = 64;
+            int64_t wtime = 0, btime = 0, winc = 0, binc = 0, movetime = 0;
+            parse_go(tokens, depth, wtime, btime, winc, binc, movetime);
+
+            TranspositionTable tt(16);
+            TimeState time_state;
+            time_state.start_time = std::chrono::steady_clock::now();
+            time_state.end_time = std::chrono::steady_clock::time_point::max();
+            time_state.max_nodes = 0;
+
+            if (movetime > 0) {
+                time_state.max_nodes = 100000000;
+                time_state.end_time = time_state.start_time + std::chrono::milliseconds(movetime);
+            } else if (position.side == Color::White && wtime > 0) {
+                time_state.end_time = time_state.start_time + std::chrono::milliseconds(wtime / 20);
+                time_state.max_nodes = 100000000;
+            } else if (position.side == Color::Black && btime > 0) {
+                time_state.end_time = time_state.start_time + std::chrono::milliseconds(btime / 20);
+                time_state.max_nodes = 100000000;
+            }
+
+            SearchResult best_result;
+            bool found = false;
+            for (int d = 1; d <= depth; ++d) {
+                if (should_stop(time_state)) {
+                    break;
+                }
+                auto result = search(position, d, tt, time_state);
+                if (result.has_move) {
+                    best_result = result;
+                    found = true;
                 }
             }
-            log<<"Starting search" << std::endl;
-            auto result = search(position, depth);
-            log<<"Search finished" << std::endl;
-            if (result.has_move) {
-                std::cout << "bestmove " << result.move.uci() << std::endl;
+
+            if (found && best_result.has_move) {
+                std::cout << "bestmove " << best_result.move.uci() << std::endl;
             } else {
                 std::cout << "bestmove 0000" << std::endl;
             }

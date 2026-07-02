@@ -4,6 +4,7 @@
 #include "core/board.hpp"
 #include "movegen/movegen.hpp"
 #include "search/search.hpp"
+#include "search/tt.hpp"
 #include "uci/uci.hpp"
 
 namespace chess {
@@ -56,7 +57,8 @@ void run_cli(int depth, Color human_color) {
             state = make_move(state, *move);
         } else {
             std::cout << "Engine is thinking..." << std::endl;
-            auto result = search(state, depth);
+            TranspositionTable tt(16);
+            auto result = search(state, depth, tt);
             if (!result.has_move) {
                 break;
             }

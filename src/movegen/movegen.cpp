@@ -1,5 +1,7 @@
 ﻿#include "movegen.hpp"
 
+#include "core/zobrist.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <stdexcept>
@@ -182,59 +184,53 @@ std::vector<Move> gen_pseudo_moves(const State& state) {
 }
 
 State make_move(const State& state, const Move& move) {
-    State next = state.copy();
-    Board& board = next.board;
+    State next;
+    next.board = state.board;
     Color side = state.side;
 
-    board[move.from] = '.';
+    next.board[move.from] = '.';
     if (move.is_ep) {
         int cap_square = static_cast<int>(move.to) + (side == Color::White ? -8 : 8);
-        board[cap_square] = '.';
+        next.board[cap_square] = '.';
     }
 
     char placed = move.promo != '.' ? (side == Color::White ? move.promo : static_cast<char>(std::tolower(move.promo))) : move.piece;
-    board[move.to] = placed;
+    next.board[move.to] = placed;
 
     if (move.is_castle) {
         if (side == Color::White) {
             if (move.to == 6) {
-                board[7] = '.';
-                board[5] = 'R';
+                next.board[7] = '.';
+                next.board[5] = 'R';
             } else if (move.to == 2) {
-                board[0] = '.';
-                board[3] = 'R';
+                next.board[0] = '.';
+                next.board[3] = 'R';
             }
         } else {
             if (move.to == 62) {
-                board[63] = '.';
-                board[61] = 'r';
+                next.board[63] = '.';
+                next.board[61] = 'r';
             } else if (move.to == 58) {
-                board[56] = '.';
-                board[59] = 'r';
+                next.board[56] = '.';
+                next.board[59] = 'r';
             }
         }
     }
 
     if (std::toupper(move.piece) == 'K') {
         if (side == Color::White) {
-            next.castling &= static_cast<uint8_t>(~(CASTLE_K | CASTLE_Q));
+            next.castling = static_cast<uint8_t>(state.castling & ~(CASTLE_K | CASTLE_Q));
         } else {
-            next.castling &= static_cast<uint8_t>(~(CASTLE_k | CASTLE_q));
+            next.castling = static_cast<uint8_t>(state.castling & ~(CASTLE_k | CASTLE_q));
         }
+    } else {
+        next.castling = state.castling;
     }
 
-    if (move.from == 0 || move.to == 0) {
-        next.castling &= static_cast<uint8_t>(~CASTLE_Q);
-    }
-    if (move.from == 7 || move.to == 7) {
-        next.castling &= static_cast<uint8_t>(~CASTLE_K);
-    }
-    if (move.from == 56 || move.to == 56) {
-        next.castling &= static_cast<uint8_t>(~CASTLE_q);
-    }
-    if (move.from == 63 || move.to == 63) {
-        next.castling &= static_cast<uint8_t>(~CASTLE_k);
-    }
+    if (move.from == 0 || move.to == 0) next.castling &= static_cast<uint8_t>(~CASTLE_Q);
+    if (move.from == 7 || move.to == 7) next.castling &= static_cast<uint8_t>(~CASTLE_K);
+    if (move.from == 56 || move.to == 56) next.castling &= static_cast<uint8_t>(~CASTLE_q);
+    if (move.from == 63 || move.to == 63) next.castling &= static_cast<uint8_t>(~CASTLE_k);
 
     if (move.is_double) {
         next.ep = static_cast<uint8_t>((move.from + move.to) / 2);
@@ -243,6 +239,8 @@ State make_move(const State& state, const Move& move) {
     }
 
     next.side = opposite(side);
+    next.hash = compute_hash(state, move);
+
     return next;
 }
 

@@ -8,10 +8,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(chess_engine
     src/main.cpp
     src/core/board.cpp
+    src/core/zobrist.cpp
     src/movegen/movegen.cpp
     src/evaluation/evaluation.cpp
     src/search/search.cpp
+    src/search/tt.cpp
     src/uci/uci.cpp
 )
 
 target_include_directories(chess_engine PRIVATE src)
+
+target_compile_features(chess_engine PRIVATE cxx_std_17)

@@ -1,4 +1,5 @@
 ﻿#include "core/board.hpp"
+#include "core/zobrist.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -15,6 +16,70 @@ std::string Move::uci() const {
         result.push_back(static_cast<char>(std::tolower(promo)));
     }
     return result;
+}
+
+namespace {
+inline int pack_piece(char p) {
+    switch (p) {
+        case 'P': return 1;
+        case 'N': return 2;
+        case 'B': return 3;
+        case 'R': return 4;
+        case 'Q': return 5;
+        case 'K': return 6;
+        case 'p': return 7;
+        case 'n': return 8;
+        case 'b': return 9;
+        case 'r': return 10;
+        case 'q': return 11;
+        case 'k': return 12;
+        default: return 0;
+    }
+}
+
+inline char unpack_piece(int idx) {
+    switch (idx) {
+        case 1: return 'P';
+        case 2: return 'N';
+        case 3: return 'B';
+        case 4: return 'R';
+        case 5: return 'Q';
+        case 6: return 'K';
+        case 7: return 'p';
+        case 8: return 'n';
+        case 9: return 'b';
+        case 10: return 'r';
+        case 11: return 'q';
+        case 12: return 'k';
+        default: return '.';
+    }
+}
+}
+
+uint32_t Move::pack() const {
+    uint32_t packed = 0;
+    packed |= static_cast<uint32_t>(from & 63);
+    packed |= static_cast<uint32_t>(to & 63) << 6;
+    packed |= static_cast<uint32_t>(pack_piece(piece) & 15) << 12;
+    packed |= static_cast<uint32_t>(pack_piece(captured) & 15) << 16;
+    packed |= static_cast<uint32_t>(pack_piece(promo) & 15) << 20;
+    packed |= static_cast<uint32_t>(is_castle ? 1 : 0) << 24;
+    packed |= static_cast<uint32_t>(is_ep ? 1 : 0) << 25;
+    packed |= static_cast<uint32_t>(is_double ? 1 : 0) << 26;
+    return packed;
+}
+
+Move Move::unpack(uint32_t packed) {
+    Move move;
+    move.from = static_cast<uint8_t>(packed & 63);
+    move.to = static_cast<uint8_t>((packed >> 6) & 63);
+    move.piece = unpack_piece(static_cast<int>((packed >> 12) & 15));
+    move.captured = unpack_piece(static_cast<int>((packed >> 16) & 15));
+    move.promo = unpack_piece(static_cast<int>((packed >> 20) & 15));
+    move.is_castle = ((packed >> 24) & 1) != 0;
+    move.is_ep = ((packed >> 25) & 1) != 0;
+    move.is_double = ((packed >> 26) & 1) != 0;
+    return move;
 }
 
 int sq(int file, int rank) {
@@ -81,6 +146,7 @@ State initial_state() {
         state.board[sq(file, 6)] = 'p';
         state.board[sq(file, 7)] = static_cast<char>(std::tolower(back[file]));
     }
+    state.hash = compute_hash(state);
     return state;
 }
 
@@ -155,6 +221,7 @@ State fen_to_state(std::string_view fen) {
         state.ep.reset();
     }
 
+    state.hash = compute_hash(state);
     return state;
 }
 

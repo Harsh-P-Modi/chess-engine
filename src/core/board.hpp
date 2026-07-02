@@ -25,6 +25,7 @@ struct State {
     Color side = Color::White;
     uint8_t castling = CASTLE_K | CASTLE_Q | CASTLE_k | CASTLE_q;
     std::optional<uint8_t> ep;
+    uint64_t hash = 0;
 
     State copy() const { return *this; }
 };

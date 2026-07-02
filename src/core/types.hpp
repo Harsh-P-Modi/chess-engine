@@ -22,7 +22,14 @@ struct Move {
     bool is_double = false;
 
     std::string uci() const;
+
+    uint32_t pack() const;
+    static Move unpack(uint32_t packed);
 };
+
+inline constexpr int FLAG_EXACT = 0;
+inline constexpr int FLAG_UPPER = 1;
+inline constexpr int FLAG_LOWER = 2;
 
 } // namespace chess
 
