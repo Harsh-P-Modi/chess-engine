@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(chess_engine
+add_executable(chess_engine_v2
     src/main.cpp
     src/core/board.cpp
     src/core/zobrist.cpp
@@ -16,6 +16,6 @@ add_executable(chess_engine
     src/uci/uci.cpp
 )
 
-target_include_directories(chess_engine PRIVATE src)
+target_include_directories(chess_engine_v2 PRIVATE src)
 
-target_compile_features(chess_engine PRIVATE cxx_std_17)
+target_compile_features(chess_engine_v2 PRIVATE cxx_std_17)
