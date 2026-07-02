@@ -69,7 +69,7 @@ void run_cli(int depth, Color human_color) {
 } // namespace chess
 
 int main(int argc, char** argv) {
-    bool uci_mode = false;
+    bool uci_mode = true; 
     int depth = 3;
     chess::Color human_color = chess::Color::White;
 
@@ -78,6 +78,7 @@ int main(int argc, char** argv) {
         if (arg1 == "uci" || arg1 == "--uci") {
             uci_mode = true;
         } else {
+            uci_mode = false; 
             try {
                 depth = std::stoi(arg1);
             } catch (...) {

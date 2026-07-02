@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <fstream>
 
 namespace chess {
 namespace uci {
@@ -57,11 +58,13 @@ static std::optional<State> parse_position(const std::vector<std::string>& token
 }
 
 int run_uci() {
+    std::ofstream log("uci.log");
     State position = initial_state();
     int search_depth = 3;
     std::string line;
 
     while (std::getline(std::cin, line)) {
+        log<<"Received: " << line << std::endl;
         if (line.empty()) {
             continue;
         }
@@ -85,13 +88,16 @@ int run_uci() {
                 position = *maybe;
             }
         } else if (command == "go") {
+            log<<"Starting search" << std::endl;
             int depth = search_depth;
             for (size_t i = 1; i + 1 < tokens.size(); ++i) {
                 if (tokens[i] == "depth") {
                     depth = std::stoi(tokens[i + 1]);
                 }
             }
+            log<<"Starting search" << std::endl;
             auto result = search(position, depth);
+            log<<"Search finished" << std::endl;
             if (result.has_move) {
                 std::cout << "bestmove " << result.move.uci() << std::endl;
             } else {
